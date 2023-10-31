@@ -777,7 +777,6 @@ class Writer(object):
             stream,
             delimiter="\t",
             lineterminator=lineterminator,
-            quotechar="",
             quoting=csv.QUOTE_NONE,
         )
         self.template = template
