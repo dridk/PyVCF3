@@ -11,3 +11,9 @@ docs/_build
 vcf/cparse.c
 vcf/cparse.so
 .coverage
+
+# virtualenv
+.venv
+
+# test data
+test_data/

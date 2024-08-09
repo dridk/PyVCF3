@@ -3,10 +3,10 @@ import collections
 import csv
 import gzip
 import itertools
-import os
 import re
 import sys
 from .utils import get_uncompressed_size
+from xopen import xopen
 
 
 try:
@@ -326,12 +326,12 @@ class _vcf_metadata_parser(object):
 
 class Reader(object):
     """Reader for a VCF v 4.0 file, an iterator returning ``_Record objects``"""
+    
 
     def __init__(
         self,
-        fsock=None,
-        filename=None,
-        compressed=None,
+        input_file,
+        threads=1,
         prepend_chr=False,
         strict_whitespace=False,
         encoding="ascii",
@@ -350,26 +350,13 @@ class Reader(object):
         """
         super(Reader, self).__init__()
 
-        if not (fsock or filename):
-            raise Exception("You must provide at least fsock or filename")
+        self.input_filepath = input_file
+        self.threads = threads
 
-        if fsock:
-            self._reader = fsock
-            if filename is None and hasattr(fsock, "name"):
-                filename = fsock.name
-                if compressed is None:
-                    compressed = filename.endswith(".gz")
-        elif filename:
-            if compressed is None:
-                compressed = filename.endswith(".gz")
-            self._reader = open(filename, "rb" if compressed else "rt")
-        self.filename = filename
+        self.filename = input_file
         self._total_bytes = 0
         self._read_bytes = 0
-        if compressed:
-            self._reader = gzip.GzipFile(fileobj=self._reader)
-            if sys.version > "3":
-                self._reader = codecs.getreader(encoding)(self._reader)
+
 
         if strict_whitespace:
             self._separator = "\t"
@@ -378,8 +365,6 @@ class Reader(object):
 
         self._row_pattern = re.compile(self._separator)
         self._alt_pattern = re.compile("[\[\]]")
-
-        self.reader = (line.strip() for line in self._reader if line.strip())
 
         #: metadata fields from header (string or hash, depending)
         self.metadata = None
@@ -399,9 +384,23 @@ class Reader(object):
         self._column_headers = []
         self._tabix = None
         self._prepend_chr = prepend_chr
-        self._parse_metainfo()
         self._format_cache = {}
         self.encoding = encoding
+
+    def __enter__(self):
+        if self.input_filepath == "-":
+            self._reader = xopen("-", "r", threads=self.threads)
+        else:
+            self._reader = xopen(self.input_filepath, "r", threads=self.threads)
+
+        self.reader = (line.strip() for line in self._reader if line.strip())
+
+        self._parse_metainfo()
+
+        return self
+    
+    def __exit__(self, exc_type, exc_value, trace) -> None:
+        self._reader.close()
 
     def __iter__(self):
         self._read_bytes = 0
