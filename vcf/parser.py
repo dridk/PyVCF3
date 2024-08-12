@@ -581,7 +581,7 @@ class Reader(object):
             samp_fmt._nums.append(entry_num)
         return samp_fmt
 
-    def _parse_samples(self, samples, samp_fmt, site):
+    def _parse_samples(self, samples, samp_fmt, site) -> dict[str, _Call]:
         """Parse a sample entry according to the format specified in the FORMAT
         column.
 
@@ -599,7 +599,7 @@ class Reader(object):
                 self.samples, samples, samp_fmt, samp_fmt._types, samp_fmt._nums, site
             )
 
-        samp_data = []
+        samp_data = {}
         _map = self._map
 
         nfields = len(samp_fmt._fields)
@@ -652,7 +652,7 @@ class Reader(object):
 
             # create a call object
             call = _Call(site, name, samp_fmt(*sampdat))
-            samp_data.append(call)
+            samp_data[name] = call
 
         return samp_data
 
