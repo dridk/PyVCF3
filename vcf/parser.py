@@ -332,6 +332,7 @@ class Reader(object):
         self,
         input_file,
         threads=1,
+        keep_samples: list[str] | None =None,
         prepend_chr=False,
         strict_whitespace=False,
         encoding="ascii",
@@ -378,6 +379,7 @@ class Reader(object):
         self.formats = None
         #: contig fields from header
         self.contigs = None
+        self.keep_samples = keep_samples
         self.samples = None
         self._sample_indexes = None
         self._header_lines = []
@@ -418,6 +420,24 @@ class Reader(object):
             self._total_bytes = get_uncompressed_size(self.filename)
 
         return self._total_bytes
+
+    def _filter_samples(self, fields: list[str]) -> None:
+        """method that will filter for the samples that the user wishes to keep. If the 
+        user wishes to filter to a subset of samples then they can pass a list of IDs to 
+        the original init function
+        
+        Parameters
+        ----------
+        fields : list[str]
+            list of all the values in the header row of the file. This row usually starts 
+            with #CHROM
+        """
+        if self.keep_samples:
+            self.samples = self.keep_samples
+            self._sample_indexes = {x: i for i, x in enumerate(fields[9:]) if x in self.samples}
+        else:
+            self.samples = fields[9:]
+            self._sample_indexes = dict([(x, i) for (i, x) in enumerate(self.samples)])
 
     def _parse_metainfo(self):
         """Parse the information stored in the metainfo of the VCF.
@@ -466,8 +486,7 @@ class Reader(object):
 
         fields = self._row_pattern.split(line[1:])
         self._column_headers = fields[:9]
-        self.samples = fields[9:]
-        self._sample_indexes = dict([(x, i) for (i, x) in enumerate(self.samples)])
+        self._filter_samples(fields)
 
     def _map(self, func, iterable, bad=[".", "", "NA"]):
         """``map``, but make bad values None."""
