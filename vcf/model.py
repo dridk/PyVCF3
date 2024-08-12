@@ -2,6 +2,7 @@ from abc import ABCMeta, abstractmethod
 import collections
 import sys
 import re
+from typing import Any, TypeVar
 
 try:
     from collections import Counter
@@ -10,13 +11,16 @@ except ImportError:
 
 allele_delimiter = re.compile(r'''[|/]''') # to split a genotype into alleles
 
-class _Call(object):
+# make a generic indicating that the default value and the return type 
+# should be the same in the get_field method
+T = TypeVar("T")
+class Call(object):
     """ A genotype call, a cell entry in a VCF file"""
 
     __slots__ = ['site', 'sample', 'data', 'gt_nums', 'gt_alleles', 'called', 'ploidity']
 
     def __init__(self, site, sample, data):
-        #: The ``_Record`` for this ``_Call``
+        #: The ``_Record`` for this ``Call``
         self.site = site
         #: The sample name
         self.sample = sample
@@ -39,7 +43,7 @@ class _Call(object):
         return "Call(sample=%s, %s)" % (self.sample, str(self.data))
 
     def __eq__(self, other):
-        """ Two _Calls are equal if their _Records are equal
+        """ Two Calls are equal if their _Records are equal
             and the samples and ``gt_type``s are the same
         """
         return (self.site == getattr(other, "site", None)
@@ -71,6 +75,45 @@ class _Call(object):
         else:
             return None
 
+    def get_field(self, field: str, default: T = None, raise_errors: bool = False) -> T:
+        """method that will retrive the appropriate attribute from the call fields. 
+        If the value doesn't exist then it returns none by default
+        
+        Parameters
+        ----------
+        field : str
+        
+        default : Any 
+            default value to be returned if the attribute doesn't exist if this value is 
+            set to None and raise_errors is set to True then an error will be raised
+        
+        raise_errors : bool
+            whether or not the user wishes to allow an AttributeError to be raised if the 
+            field is no found in the data. Even if true, errors will only be raised if the 
+            default value is not provided
+
+        Returns
+        -------
+        returns either the default value of the value from the attribute
+
+        Raises
+        ------
+        AttributeError
+            If the attribute can't be found and the user doesn't wish to return a default value then we can r
+        """
+        try:
+            if (value := getattr(self.data, field)):
+                return value
+            else:
+                return default
+        except AttributeError as e:
+            if default is not None:
+                return default
+            elif default is None and raise_errors:
+                raise e
+            else:
+                return None
+      
     @property
     def gt_type(self):
         '''The type of genotype.
@@ -90,8 +133,9 @@ class _Call(object):
             else:
                 return 1
         else:
-            return None
 
+            return None
+            
     @property
     def phased(self):
         '''A boolean indicating whether or not
@@ -191,7 +235,7 @@ class _Record(object):
         #: list of alleles. [0] = REF, [1:] = ALTS
         self.alleles = [self.REF]
         self.alleles.extend(self.ALT)
-        #: list of ``_Calls`` for each sample ordered as in source VCF
+        #: list of ``Calls`` for each sample ordered as in source VCF
         self.samples = samples or []
         self._sample_indexes = sample_indexes
 
@@ -285,7 +329,7 @@ class _Record(object):
         self.INFO[info] = value
 
     def genotype(self, name):
-        """ Lookup a ``_Call`` for the sample given in ``name`` """
+        """ Lookup a ``Call`` for the sample given in ``name`` """
         return self.samples[self._sample_indexes[name]]
 
     @property

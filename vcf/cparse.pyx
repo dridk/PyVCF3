@@ -27,12 +27,13 @@ def parse_samples(
         list names, list samples, samp_fmt,
         list samp_fmt_types, list samp_fmt_nums, site):
 
+    sample_data = {}
     cdef char *name
     cdef char *fmt
     cdef char *sample
     cdef int entry_type
     cdef int i, j
-    cdef list samp_data = []
+    # cdef list samp_data = []
     cdef list sampvals
     n_samples = len(samples)
     n_formats = len(samp_fmt._fields)
@@ -93,7 +94,7 @@ def parse_samples(
 
         # create a call object
         call = _Call(site, name, samp_fmt(*sampdat))
-        samp_data.append(call)
+        samp_data[name] = call
 
     return samp_data
 

@@ -24,7 +24,7 @@ try:
 except ImportError:
     cparse = None
 
-from .model import _Call, _Record, make_calldata_tuple
+from .model import Call, _Record, make_calldata_tuple
 from .model import _Substitution, _Breakend, _SingleBreakend, _SV
 
 
@@ -581,7 +581,7 @@ class Reader(object):
             samp_fmt._nums.append(entry_num)
         return samp_fmt
 
-    def _parse_samples(self, samples, samp_fmt, site) -> dict[str, _Call]:
+    def _parse_samples(self, samples, samp_fmt, site) -> dict[str, Call]:
         """Parse a sample entry according to the format specified in the FORMAT
         column.
 
@@ -651,7 +651,7 @@ class Reader(object):
                     sampdat[i] = vals
 
             # create a call object
-            call = _Call(site, name, samp_fmt(*sampdat))
+            call = Call(site, name, samp_fmt(*sampdat))
             samp_data[name] = call
 
         return samp_data
