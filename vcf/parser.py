@@ -377,7 +377,7 @@ class Reader(object):
             self._separator = "\t| +"
 
         self._row_pattern = re.compile(self._separator)
-        self._alt_pattern = re.compile("[\[\]]")
+        self._alt_pattern = re.compile(r"[\[\]]")
 
         self.reader = (line.strip() for line in self._reader if line.strip())
 
@@ -651,7 +651,7 @@ class Reader(object):
                 withinMainAssembly = True
             pos = remoteCoords[1]
             orientation = str[0] == "[" or str[0] == "]"
-            remoteOrientation = re.search("\[", str) is not None
+            remoteOrientation = re.search(r"\[", str) is not None
             if orientation:
                 connectingSequence = items[2]
             else:
