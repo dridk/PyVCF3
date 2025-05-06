@@ -12,4 +12,4 @@ from vcf.filters import Base as Filter
 from vcf.parser import RESERVED_INFO, RESERVED_FORMAT
 from vcf.sample_filter import SampleFilter
 
-VERSION = '1.0.3'
+VERSION = '1.0.4'
